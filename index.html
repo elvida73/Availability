@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Availability">
+<title>Dr. Kulas — Availability</title>
+
+<style>
+  /* ── TOKENS ───────────────────────────────────────────────── */
+  :root {
+    --navy:    #0F2340;
+    --blue:    #1A5EA8;
+    --blue-lt: #2E75B6;
+    --ice:     #E8F2FB;
+    --open:    #1A7F4B;
+    --open-bg: #D4EDDA;
+    --over:    #8A6000;
+    --over-bg: #FFF3CD;
+    --block:   #9C0006;
+    --block-bg:#F8D7DA;
+    --text:    #1A1A2E;
+    --muted:   #6B7280;
+    --border:  #D1DCE8;
+    --white:   #FFFFFF;
+    --radius:  14px;
+    --shadow:  0 4px 24px rgba(15,35,64,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: #F0F4F9;
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* ── HEADER ───────────────────────────────────────────────── */
+  header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: normal;
+    letter-spacing: 0.5px;
+  }
+  header p {
+    font-size: 12px;
+    opacity: 0.65;
+    margin-top: 3px;
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+
+  /* ── SIGN IN ──────────────────────────────────────────────── */
+  #signin-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 40px 24px;
+    text-align: center;
+  }
+  #signin-screen h2 {
+    font-size: 22px;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+  #signin-screen p {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+    font-family: 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+  }
+  .btn-signin {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 50px;
+    padding: 14px 28px;
+    font-size: 15px;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-signin:active { transform: scale(0.97); }
+  .btn-signin svg { width: 20px; height: 20px; }
+
+  /* ── MAIN CONTENT ─────────────────────────────────────────── */
+  #main-screen { display: none; padding: 16px; }
+
+  /* ── EVAL TYPE SELECTOR ───────────────────────────────────── */
+  .type-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .type-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border-radius: var(--radius);
+    border: 2px solid var(--border);
+    background: var(--white);
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .type-btn.active {
+    border-color: var(--blue);
+    background: var(--blue);
+    color: var(--white);
+    box-shadow: 0 3px 12px rgba(26,94,168,0.35);
+  }
+
+  /* ── CARD ─────────────────────────────────────────────────── */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-header h2 {
+    font-size: 14px;
+    font-weight: normal;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--navy);
+  }
+  .card-body { padding: 12px 16px; }
+
+  /* ── AVAILABILITY LIST ────────────────────────────────────── */
+  .avail-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #F0F4F9;
+    gap: 12px;
+  }
+  .avail-item:last-child { border-bottom: none; }
+
+  .avail-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-open  { background: var(--open); }
+  .dot-over  { background: var(--over); }
+  .dot-block { background: var(--block); }
+
+  .avail-date {
+    flex: 1;
+    font-size: 15px;
+    color: var(--text);
+  }
+  .avail-date .day-name {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Helvetica Neue', sans-serif;
+    display: block;
+  }
+  .avail-badge {
+    font-size: 11px;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .badge-open  { background: var(--open-bg);  color: var(--open);  }
+  .badge-over  { background: var(--over-bg);  color: var(--over);  }
+  .badge-block { background: var(--block-bg); color: var(--block); }
+
+  .avail-loc {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Helvetica Neue', sans-serif;
+    margin-top: 2px;
+  }
+  .loc-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
+
+  /* ── CALENDAR ─────────────────────────────────────────────── */
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cal-nav button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: var(--blue);
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 8px;
+    transition: background 0.15s;
+  }
+  .cal-nav button:active { background: var(--ice); }
+  .cal-nav h3 {
+    font-size: 16px;
+    font-weight: normal;
+    color: var(--navy);
+  }
+
+  .cal-grid {
+    padding: 10px 12px 14px;
+  }
+  .cal-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 6px;
+  }
+  .cal-days-header span {
+    text-align: center;
+    font-size: 11px;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-weight: 600;
+    color: var(--muted);
+    padding: 4px 0;
+  }
+  .cal-days-header span.fri-hdr { color: var(--blue); }
+
+  .cal-cells {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .cal-cell {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    position: relative;
+    cursor: default;
+    transition: transform 0.1s;
+  }
+  .cal-cell.clickable { cursor: pointer; }
+  .cal-cell.clickable:active { transform: scale(0.93); }
+  .cal-cell.empty { background: transparent; }
+  .cal-cell.today { box-shadow: 0 0 0 2px var(--blue); }
+  .cal-cell.fri {
+    background: #DBEAFE;
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .cal-cell.fri.open-fri   { background: var(--open-bg);  color: var(--open); }
+  .cal-cell.fri.over-fri   { background: var(--over-bg);  color: var(--over); }
+  .cal-cell.fri.block-fri  { background: var(--block-bg); color: var(--block); }
+  .cal-cell.has-clinical   { background: #DBEAFE; }
+  .cal-cell.has-nonclinical{ background: #F3F4F6; }
+
+  .loc-stripe {
+    position: absolute;
+    left: 0;
+    top: 10%;
+    height: 80%;
+    width: 4px;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .cal-cell .cell-num { font-size: 13px; line-height: 1; }
+  .loading-spinner {
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+    font-family: 'Helvetica Neue', sans-serif;
+    font-size: 13px;
+  }
+
+  /* ── LEGEND ───────────────────────────────────────────────── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-family: 'Helvetica Neue', sans-serif;
+    color: var(--muted);
+  }
+  .legend-swatch {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+  }
+
+  /* ── STATUS / ERROR ───────────────────────────────────────── */
+  .status-bar {
+    text-align: center;
+    font-size: 12px;
+    font-family: 'Helvetica Neue', sans-serif;
+    color: var(--muted);
+    padding: 8px;
+  }
+  .error-msg {
+    background: var(--block-bg);
+    color: var(--block);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    font-size: 13px;
+    font-family: 'Helvetica Neue', sans-serif;
+    margin-bottom: 16px;
+  }
+
+  /* ── SIGN OUT ─────────────────────────────────────────────── */
+  .signout-bar {
+    text-align: center;
+    padding: 8px;
+  }
+  .signout-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Helvetica Neue', sans-serif;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Dr. Kulas — Scheduling</h1>
+  <p id="header-sub">Checking availability…</p>
+</header>
+
+<!-- SIGN IN SCREEN -->
+<div id="signin-screen">
+  <h2>Sign In to Continue</h2>
+  <p>Sign in with your Google Workspace account to check your Friday availability in real time.</p>
+  <button class="btn-signin" id="signin-btn">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+    Sign in with Google
+  </button>
+</div>
+
+<!-- MAIN SCREEN -->
+<div id="main-screen">
+
+  <!-- Eval type selector -->
+  <div class="type-selector">
+    <button class="type-btn active" data-type="Neuropsychological" onclick="selectType(this)">
+      Neuropsychological
+    </button>
+    <button class="type-btn" data-type="Psychological" onclick="selectType(this)">
+      Psychological / FFDE
+    </button>
+  </div>
+
+  <div id="error-container"></div>
+
+  <!-- Next available summary -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Next Available</h2>
+      <span class="status-bar" id="list-status">Loading…</span>
+    </div>
+    <div class="card-body" id="avail-list">
+      <div class="loading-spinner">Checking calendar…</div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="card">
+    <div class="cal-nav">
+      <button onclick="prevMonth()">‹</button>
+      <h3 id="cal-month-label"></h3>
+      <button onclick="nextMonth()">›</button>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-days-header">
+        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span>
+        <span>Th</span><span class="fri-hdr">Fr</span><span>Sa</span>
+      </div>
+      <div class="cal-cells" id="cal-cells">
+        <div class="loading-spinner" style="grid-column:1/-1">Loading…</div>
+      </div>
+    </div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--open-bg);border:1px solid var(--open)"></div>Open</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--over-bg);border:1px solid var(--over)"></div>Overbook</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:var(--block-bg);border:1px solid var(--block)"></div>Blocked</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#DBEAFE"></div>Clinical</div>
+      <div class="legend-item"><div class="legend-swatch" style="background:#F3F4F6;border:1px solid #D1D5DB"></div>Other</div>
+      <div class="legend-item"><div class="loc-dot" style="background:#2ECC71"></div>Farmington</div>
+      <div class="legend-item"><div class="loc-dot" style="background:#9B59B6"></div>New Haven</div>
+      <div class="legend-item"><div class="loc-dot" style="background:#3498DB"></div>Wilton</div>
+    </div>
+  </div>
+
+  <div class="signout-bar">
+    <button class="signout-btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- Google API -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+// Replace these with your actual values after setup:
+const CLIENT_ID     = 'YOUR_GOOGLE_CLIENT_ID';      // from Google Cloud Console
+const CALENDAR_ID   = 'primary';
+const SCOPES        = 'https://www.googleapis.com/auth/calendar.readonly';
+
+// ── SCHEDULING RULES ──────────────────────────────────────────────────────────
+const NEURO_TYPES  = ['neuropsychological','pediatric neuropsych','npffde','school/educational'];
+const PSYCH_TYPES  = ['psychological','ffde'];
+const LOCATION_COLORS = { farmington: '#2ECC71', 'new haven': '#9B59B6', wilton: '#3498DB' };
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let accessToken  = null;
+let evalType     = 'Neuropsychological';
+let viewDate     = new Date();
+let monthCache   = {};   // "YYYY-MM" -> by-date event map
+
+viewDate.setDate(1);
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+
+function initGoogle() {
+  const saved = sessionStorage.getItem('gtoken');
+  if (saved) {
+    accessToken = saved;
+    showMain();
+  }
+}
+
+document.getElementById('signin-btn').addEventListener('click', () => {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope:     SCOPES,
+    callback:  (resp) => {
+      if (resp.error) { showError('Sign-in failed: ' + resp.error); return; }
+      accessToken = resp.access_token;
+      sessionStorage.setItem('gtoken', accessToken);
+      showMain();
+    },
+  });
+  client.requestAccessToken();
+});
+
+function signOut() {
+  sessionStorage.removeItem('gtoken');
+  accessToken = null;
+  document.getElementById('signin-screen').style.display = 'flex';
+  document.getElementById('main-screen').style.display   = 'none';
+  document.getElementById('header-sub').textContent = 'Sign in to continue';
+}
+
+function showMain() {
+  document.getElementById('signin-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display   = 'block';
+  document.getElementById('header-sub').textContent      = 'Friday Availability';
+  refresh();
+}
+
+// ── EVAL TYPE ─────────────────────────────────────────────────────────────────
+
+function selectType(btn) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  evalType = btn.dataset.type;
+  monthCache = {};
+  refresh();
+}
+
+// ── CALENDAR API ──────────────────────────────────────────────────────────────
+
+async function fetchMonth(year, month) {
+  const key = `${year}-${String(month+1).padStart(2,'0')}`;
+  if (monthCache[key]) return monthCache[key];
+
+  const start = new Date(year, month, 1);
+  const end   = new Date(year, month+1, 0, 23, 59, 59);
+  const tz    = 'America/New_York';
+
+  const params = new URLSearchParams({
+    calendarId:   CALENDAR_ID,
+    timeMin:      start.toISOString(),
+    timeMax:      end.toISOString(),
+    timeZone:     tz,
+    singleEvents: true,
+    orderBy:      'startTime',
+    maxResults:   250,
+  });
+
+  const resp = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?${params}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!resp.ok) {
+    if (resp.status === 401) { signOut(); throw new Error('Session expired — please sign in again.'); }
+    throw new Error(`Calendar API error: ${resp.status}`);
+  }
+
+  const data = await resp.json();
+  const byDate = {};
+
+  for (const e of (data.items || [])) {
+    const startStr = e.start?.dateTime || e.start?.date || '';
+    const dateStr  = startStr.substring(0, 10);
+    if (!dateStr) continue;
+    const d = new Date(dateStr + 'T12:00:00');   // noon local avoids DST edge
+    if (d.getMonth() !== month) continue;        // filter bleed from adjacent months
+    const key2 = dateStr;
+    if (!byDate[key2]) byDate[key2] = [];
+    byDate[key2].push({ summary: e.summary || '', location: e.location || '' });
+  }
+
+  monthCache[key] = byDate;
+  return byDate;
+}
+
+// ── EVENT CLASSIFICATION ──────────────────────────────────────────────────────
+
+function classifyEvent(summary) {
+  const s = summary.toLowerCase();
+  if (NEURO_TYPES.some(k => s.includes(k))) return 'neuro';
+  if (PSYCH_TYPES.some(k => s.includes(k))) return 'psych';
+  if (s.includes('consult')) return 'exempt';
+  return 'nonclinical';
+}
+
+function locationColor(loc) {
+  const l = loc.toLowerCase();
+  for (const [key, color] of Object.entries(LOCATION_COLORS)) {
+    if (l.includes(key)) return color;
+  }
+  return null;
+}
+
+function assessFriday(events) {
+  const reqCat = (evalType === 'Psychological' || evalType === 'FFDE') ? 'psych' : 'neuro';
+  const neuro  = events.filter(e => classifyEvent(e.summary) === 'neuro');
+  const psych  = events.filter(e => classifyEvent(e.summary) === 'psych');
+  const nc     = events.filter(e => classifyEvent(e.summary) === 'nonclinical');
+
+  if ((neuro.length >= 1 && psych.length >= 1) || psych.length >= 2) return { status: 'blocked', nc };
+  if (neuro.length >= 1 && reqCat === 'neuro') return { status: 'blocked', nc };
+  if (psych.length >= 2 && reqCat === 'neuro') return { status: 'blocked', nc };
+  if (neuro.length === 1 && reqCat === 'psych') {
+    const loc = neuro[0].location;
+    return { status: 'overbook', loc, nc };
+  }
+  if (psych.length === 1 && reqCat === 'psych') {
+    return { status: 'overbook', loc: psych[0].location, nc };
+  }
+  return { status: 'open', nc };
+}
+
+function getLocStripe(events) {
+  for (const e of events) {
+    const c = locationColor(e.location);
+    if (c) return c;
+  }
+  return null;
+}
+
+// ── DATE HELPERS ──────────────────────────────────────────────────────────────
+
+function isoDate(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth()+1).padStart(2,'0') + '-' +
+    String(d.getDate()).padStart(2,'0');
+}
+
+function friendlyDate(d) {
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function getFridays(year, month) {
+  const fridays = [];
+  const d = new Date(year, month, 1);
+  while (d.getMonth() === month) {
+    if (d.getDay() === 5) fridays.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return fridays;
+}
+
+// ── REFRESH ───────────────────────────────────────────────────────────────────
+
+async function refresh() {
+  renderCalendar();
+  renderAvailList();
+}
+
+// ── AVAILABILITY LIST ─────────────────────────────────────────────────────────
+
+async function renderAvailList() {
+  const listEl  = document.getElementById('avail-list');
+  const statEl  = document.getElementById('list-status');
+  listEl.innerHTML = '<div class="loading-spinner">Checking calendar…</div>';
+  statEl.textContent = '';
+
+  try {
+    const results = [];
+    const today   = new Date(); today.setHours(0,0,0,0);
+    let   d       = new Date(today);
+    // Move to next Friday
+    const daysToFri = (5 - d.getDay() + 7) % 7 || 7;
+    d.setDate(d.getDate() + daysToFri);
+
+    let found = 0;
+    let attempts = 0;
+
+    while (found < 6 && attempts < 52) {
+      attempts++;
+      const byDate = await fetchMonth(d.getFullYear(), d.getMonth());
+      const key    = isoDate(d);
+      const events = byDate[key] || [];
+      const assess = assessFriday(events);
+      const stripe = getLocStripe(events);
+
+      results.push({ date: new Date(d), assess, stripe });
+      if (assess.status !== 'blocked') found++;
+
+      d.setDate(d.getDate() + 7);
+    }
+
+    listEl.innerHTML = '';
+    for (const r of results) {
+      const item = document.createElement('div');
+      item.className = 'avail-item';
+
+      const dotClass  = r.assess.status === 'open' ? 'dot-open' :
+                        r.assess.status === 'overbook' ? 'dot-over' : 'dot-block';
+      const badgeClass= r.assess.status === 'open' ? 'badge-open' :
+                        r.assess.status === 'overbook' ? 'badge-over' : 'badge-block';
+      const badgeText = r.assess.status === 'open' ? 'Open' :
+                        r.assess.status === 'overbook' ? 'Overbook' : 'Blocked';
+
+      let locHtml = '';
+      if (r.stripe) {
+        const locName = Object.entries(LOCATION_COLORS)
+          .find(([k,v]) => v === r.stripe)?.[0] || '';
+        locHtml = `<div class="avail-loc">
+          <span class="loc-dot" style="background:${r.stripe}"></span>
+          ${locName.charAt(0).toUpperCase() + locName.slice(1)} booked
+        </div>`;
+      }
+      if (r.assess.nc && r.assess.nc.length > 0) {
+        locHtml += `<div class="avail-loc" style="color:#888">
+          📅 ${r.assess.nc.map(e=>e.summary).join(', ')}
+        </div>`;
+      }
+
+      item.innerHTML = `
+        <div class="avail-dot ${dotClass}"></div>
+        <div class="avail-date">
+          ${friendlyDate(r.date)}
+          ${locHtml}
+        </div>
+        <span class="avail-badge ${badgeClass}">${badgeText}</span>
+      `;
+      listEl.appendChild(item);
+    }
+
+    const openCount = results.filter(r => r.assess.status !== 'blocked').length;
+    statEl.textContent = `${openCount} available`;
+
+  } catch (err) {
+    listEl.innerHTML = `<div class="error-msg">${err.message}</div>`;
+  }
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────────────
+
+function updateMonthLabel() {
+  document.getElementById('cal-month-label').textContent =
+    viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function prevMonth() {
+  viewDate.setMonth(viewDate.getMonth() - 1);
+  renderCalendar();
+}
+
+function nextMonth() {
+  viewDate.setMonth(viewDate.getMonth() + 1);
+  renderCalendar();
+}
+
+async function renderCalendar() {
+  updateMonthLabel();
+  const cells  = document.getElementById('cal-cells');
+  const year   = viewDate.getFullYear();
+  const month  = viewDate.getMonth();
+  const today  = new Date(); today.setHours(0,0,0,0);
+
+  // Build grid skeleton first (instant)
+  cells.innerHTML = '';
+  const firstDay  = new Date(year, month, 1).getDay();   // 0=Sun
+  const daysInMo  = new Date(year, month+1, 0).getDate();
+
+  // Empty cells before 1st
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-cell empty';
+    cells.appendChild(el);
+  }
+
+  const cellMap = {};   // date-string -> element
+
+  for (let day = 1; day <= daysInMo; day++) {
+    const d      = new Date(year, month, day);
+    const isFri  = (d.getDay() === 5);
+    const isTod  = (d.getTime() === today.getTime());
+    const key    = isoDate(d);
+
+    const el = document.createElement('div');
+    el.className = 'cal-cell' + (isFri ? ' fri' : '') + (isTod ? ' today' : '');
+
+    const num = document.createElement('span');
+    num.className = 'cell-num';
+    num.textContent = day;
+    el.appendChild(num);
+
+    cellMap[key] = el;
+    cells.appendChild(el);
+  }
+
+  // Async: load events and color cells
+  try {
+    const byDate = await fetchMonth(year, month);
+
+    for (const [dateKey, events] of Object.entries(byDate)) {
+      const el = cellMap[dateKey];
+      if (!el) continue;
+
+      const d     = new Date(dateKey + 'T12:00:00');
+      const isFri = (d.getDay() === 5);
+
+      if (isFri) {
+        el.classList.remove('fri');
+        const assess = assessFriday(events);
+        el.classList.add(
+          assess.status === 'open'    ? 'open-fri' :
+          assess.status === 'overbook'? 'over-fri' : 'block-fri'
+        );
+        el.classList.add('clickable');
+
+        // Location stripe
+        const stripe = getLocStripe(events);
+        if (stripe) {
+          const bar = document.createElement('div');
+          bar.className = 'loc-stripe';
+          bar.style.background = stripe;
+          el.appendChild(bar);
+        }
+      } else {
+        // Non-Friday: shade by event type
+        const cats = events.map(e => classifyEvent(e.summary));
+        if (cats.some(c => c === 'neuro' || c === 'psych')) {
+          el.classList.add('has-clinical');
+        } else if (cats.length > 0) {
+          el.classList.add('has-nonclinical');
+        }
+      }
+    }
+  } catch (err) {
+    // Show error inline but don't crash
+    const errEl = document.createElement('div');
+    errEl.style.cssText = 'grid-column:1/-1;text-align:center;padding:12px;color:#9C0006;font-size:12px;';
+    errEl.textContent = 'Could not load calendar: ' + err.message;
+    cells.appendChild(errEl);
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+
+window.addEventListener('load', initGoogle);
+
+</script>
+</body>
+</html>
