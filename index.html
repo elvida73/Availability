@@ -448,7 +448,7 @@
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 // Replace these with your actual values after setup:
-const CLIENT_ID = '425735998024-95m5de5rkc4lv4gr623qb76oc31biqff.apps.googleusercontent.com';      // from Google Cloud Console
+const CLIENT_ID     = 'YOUR_GOOGLE_CLIENT_ID';      // from Google Cloud Console
 const CALENDAR_ID   = 'primary';
 const SCOPES        = 'https://www.googleapis.com/auth/calendar.readonly';
 
@@ -468,10 +468,17 @@ viewDate.setDate(1);
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 
 function initGoogle() {
-  const saved = sessionStorage.getItem('gtoken');
-  if (saved) {
+  const saved   = localStorage.getItem('gtoken');
+  const expiry  = localStorage.getItem('gtoken_expiry');
+  const isValid = saved && expiry && Date.now() < parseInt(expiry);
+
+  if (isValid) {
     accessToken = saved;
     showMain();
+  } else {
+    // Token missing or expired — clear and show sign-in
+    localStorage.removeItem('gtoken');
+    localStorage.removeItem('gtoken_expiry');
   }
 }
 
@@ -482,7 +489,10 @@ document.getElementById('signin-btn').addEventListener('click', () => {
     callback:  (resp) => {
       if (resp.error) { showError('Sign-in failed: ' + resp.error); return; }
       accessToken = resp.access_token;
-      sessionStorage.setItem('gtoken', accessToken);
+      // Store token with expiry (default Google token lifetime is 3600s)
+      const expiresIn = (resp.expires_in || 3600) * 1000;
+      localStorage.setItem('gtoken', accessToken);
+      localStorage.setItem('gtoken_expiry', Date.now() + expiresIn);
       showMain();
     },
   });
@@ -490,7 +500,8 @@ document.getElementById('signin-btn').addEventListener('click', () => {
 });
 
 function signOut() {
-  sessionStorage.removeItem('gtoken');
+  localStorage.removeItem('gtoken');
+  localStorage.removeItem('gtoken_expiry');
   accessToken = null;
   document.getElementById('signin-screen').style.display = 'flex';
   document.getElementById('main-screen').style.display   = 'none';
